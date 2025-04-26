@@ -1,5 +1,5 @@
 .animate-fade-in {
-    animation: fadein 4s ease-out;
+    animation: fadein 8s ease-out;
   }
   
   @keyframes fadein {
