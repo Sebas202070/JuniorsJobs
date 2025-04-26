@@ -95,7 +95,7 @@ function HomePage() {
       <Navbar />
       <header className="relative overflow-hidden py-16 md:py-24">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-700 via-indigo-700 to-purple-800 opacity-70 z-0" />
-        <div className="container -mt-8 mx-auto text-center relative z-10">
+        <div className="container -mt-8 mx-auto text-center relative z-10 px-4 md:px-8"> {/* Agregamos padding horizontal */}
           <h1 className="text-6xl font-bold tracking-tight mb-2 text-blue-300">Juniors</h1>
           <h1 className="text-6xl font-bold tracking-tight mb-4 text-white flex items-center justify-center">
             Jobs <FiSearch className="ml-2 text-blue-300" size={40} />
