@@ -1,14 +1,20 @@
-
 'use client';
 
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 function AuthErrorPage() {
+  const [platform, setPlatform] = useState(null);
+  const [error, setError] = useState(null);
+  const [description, setDescription] = useState(null);
   const searchParams = useSearchParams();
-  const platform = searchParams.get('platform');
-  const error = searchParams.get('error');
-  const description = searchParams.get('description');
+
+  useEffect(() => {
+    setPlatform(searchParams.get('platform'));
+    setError(searchParams.get('error'));
+    setDescription(searchParams.get('description'));
+  }, [searchParams]);
 
   return (
     <div>
