@@ -15,24 +15,109 @@ const platforms = [
 ];
 
 function HomePage() {
-  const [connectedPlatforms, setConnectedPlatforms] = useState(() => {
-    const storedState = localStorage.getItem('connectedPlatforms');
-    return storedState ? JSON.parse(storedState) : platforms.reduce((acc, platform) => ({ ...acc, [platform.name]: platform.connected }), {});
-  });
+  const [connectedPlatforms, setConnectedPlatforms] = useState(() => (
+    platforms.reduce((acc, platform) => ({ ...acc, [platform.name]: platform.connected }), {})
+  ));
   const [searching, setSearching] = useState(false);
-  const [vacancies, setVacancies] = useState([]);
+  const [vacancies, setVacancies] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const storedVacancies = localStorage.getItem('vacancies');
+      return storedVacancies ? JSON.parse(storedVacancies) : [];
+    }
+    return [];
+  });
   const router = useRouter();
   const searchParams = useSearchParams();
   const resultsRef = useRef(null);
-  const [searchMessage, setSearchMessage] = useState('');
-  const [resultsVisible, setResultsVisible] = useState(false);
-  const [linkedinVacanciesCount, setLinkedinVacanciesCount] = useState(0);
-  const [getOnBoardVacanciesCount, setGetOnBoardVacanciesCount] = useState(0);
-  const [searchCompleted, setSearchCompleted] = useState(false);
+  const [searchMessage, setSearchMessage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('searchMessage') || '';
+    }
+    return '';
+  });
+  const [resultsVisible, setResultsVisible] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('resultsVisible') === 'true';
+    }
+    return false;
+  });
+  const [linkedinVacanciesCount, setLinkedinVacanciesCount] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const storedCount = localStorage.getItem('linkedinVacanciesCount');
+      return storedCount ? parseInt(storedCount, 10) : 0;
+    }
+    return 0;
+  });
+  const [getOnBoardVacanciesCount, setGetOnBoardVacanciesCount] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const storedCount = localStorage.getItem('getOnBoardVacanciesCount');
+      return storedCount ? parseInt(storedCount, 10) : 0;
+    }
+    return 0;
+  });
+  const [searchCompleted, setSearchCompleted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('searchCompleted') === 'true';
+    }
+    return false;
+  });
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+  const [hasLoadedLocalStorage, setHasLoadedLocalStorage] = useState(false);
 
   const isAnyPlatformConnected = Object.values(connectedPlatforms).some(connected => connected);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedConnectedPlatforms = localStorage.getItem('connectedPlatforms');
+      if (storedConnectedPlatforms) {
+        setConnectedPlatforms(JSON.parse(storedConnectedPlatforms));
+      }
+      setHasLoadedLocalStorage(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('connectedPlatforms', JSON.stringify(connectedPlatforms));
+    }
+  }, [connectedPlatforms]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('resultsVisible', JSON.stringify(resultsVisible));
+    }
+  }, [resultsVisible]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('vacancies', JSON.stringify(vacancies));
+    }
+  }, [vacancies]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('searchMessage', searchMessage);
+    }
+  }, [searchMessage]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('linkedinVacanciesCount', linkedinVacanciesCount.toString());
+    }
+  }, [linkedinVacanciesCount]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('getOnBoardVacanciesCount', getOnBoardVacanciesCount.toString());
+    }
+  }, [getOnBoardVacanciesCount]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('searchCompleted', searchCompleted.toString());
+    }
+  }, [searchCompleted]);
 
   const handleConnectPlatform = (platformName, authUrl) => {
     console.log('handleConnectPlatform llamada:', { platformName, authUrl, currentConnectedPlatforms: connectedPlatforms });
@@ -40,7 +125,6 @@ function HomePage() {
       const isCurrentlyConnected = prev[platformName];
       const newState = { ...prev };
       newState[platformName] = !isCurrentlyConnected;
-      localStorage.setItem('connectedPlatforms', JSON.stringify(newState));
       return newState;
     });
   };
@@ -145,10 +229,9 @@ function HomePage() {
       const flattenedVacancies = allVacancies.flat();
       console.log('Vacantes combinadas:', flattenedVacancies);
       setVacancies(flattenedVacancies);
-      setSearchCompleted(true);
+      setResultsVisible(true);
 
       if (flattenedVacancies.length > 0) {
-        setResultsVisible(true);
         setTimeout(() => {
           if (resultsRef.current) {
             resultsRef.current.classList.add('animate-fade-in');
@@ -158,8 +241,6 @@ function HomePage() {
             }, 1000);
           }
         }, 500);
-      } else {
-        setResultsVisible(false);
       }
 
     } catch (error) {
@@ -168,20 +249,41 @@ function HomePage() {
       setAlertMessage(error.message);
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
-      setSearchCompleted(true);
       setResultsVisible(false);
+      setVacancies([]);
+      setLinkedinVacanciesCount(0);
+      setGetOnBoardVacanciesCount(0);
+      setSearchCompleted(false);
+      setSearchMessage('');
     } finally {
       setSearching(false);
       console.log('Búsqueda finalizada');
+      setSearchCompleted(true);
     }
   };
 
-  useEffect(() => {
-    const storedState = localStorage.getItem('connectedPlatforms');
-    if (storedState) {
-      setConnectedPlatforms(JSON.parse(storedState));
-    }
+  const handleClearSearch = () => {
+    setVacancies([]);
+    setSearchMessage('');
+    setResultsVisible(false);
+    setLinkedinVacanciesCount(0);
+    setGetOnBoardVacanciesCount(0);
+    setSearchCompleted(false);
+    setConnectedPlatforms(prev => ({
+      ...prev,
+      LinkedIn: false,
+      GetOnBoard: false,
+    }));
+    localStorage.removeItem('vacancies');
+    localStorage.removeItem('searchMessage');
+    localStorage.removeItem('resultsVisible');
+    localStorage.removeItem('linkedinVacanciesCount');
+    localStorage.removeItem('getOnBoardVacanciesCount');
+    localStorage.removeItem('searchCompleted');
+    localStorage.removeItem('connectedPlatforms'); // También limpiamos el estado de conexión
+  };
 
+  useEffect(() => {
     const linkedinConnected = searchParams.get('linkedin_connected');
     const getonboardConnected = searchParams.get('getonboard_connected');
 
@@ -191,8 +293,6 @@ function HomePage() {
     if (linkedinConnected === 'true') {
       setConnectedPlatforms(prev => {
         const newState = { ...prev, LinkedIn: true };
-        localStorage.setItem('connectedPlatforms', JSON.stringify(newState));
-        console.log('LinkedIn conectado (por parámetro). Nuevo estado:', newState);
         return newState;
       });
     }
@@ -200,8 +300,6 @@ function HomePage() {
     if (getonboardConnected === 'true') {
       setConnectedPlatforms(prev => {
         const newState = { ...prev, GetOnBoard: true };
-        localStorage.setItem('connectedPlatforms', JSON.stringify(newState));
-        console.log('GetOnBoard conectado (por parámetro). Nuevo estado:', newState);
         return newState;
       });
     }
@@ -210,12 +308,8 @@ function HomePage() {
       console.log('Limpiando parámetros de la URL.');
       router.replace('/'); // Limpiar los parámetros de la URL
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, router]);
-
-  useEffect(() => {
-    localStorage.setItem('connectedPlatforms', JSON.stringify(connectedPlatforms));
-  }, [connectedPlatforms]);
 
   useEffect(() => {
     if (searchCompleted) {
@@ -223,8 +317,8 @@ function HomePage() {
       if (linkedinVacanciesCount > 0 || getOnBoardVacanciesCount > 0) {
         const linkedinMessage = linkedinVacanciesCount > 0 ? `LinkedIn(${linkedinVacanciesCount})` : '';
         const getOnBoardMessage = getOnBoardVacanciesCount > 0 ? `GetOnBoard(${getOnBoardVacanciesCount})` : '';
-        const conjunction = linkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' ,  ' : '';
-        message = `Se encontraron ${linkedinMessage}${conjunction}${getOnBoardMessage} ofertas de empleo para juniors.`;
+        const conjunction =  linkedinMessagelinkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' ,  ' : '';
+        message = `${linkedinMessage}${conjunction}${getOnBoardMessage}`;
       } else if (isAnyPlatformConnected) {
         message = 'No se encontraron ofertas de empleo para juniors con los criterios actuales.';
       } else {
@@ -242,7 +336,7 @@ function HomePage() {
       <Navbar />
       <header className="relative overflow-hidden py-16 md:py-24">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-700 via-indigo-700 to-purple-800 opacity-70 z-0" />
-        <div className="container -mt-8 mx-auto text-center relative z-10 px-4 md:px-8">
+        <div className="container -mt-10 mx-auto text-center relative z-10 px-4 md:px-8">
           <h1 className="text-6xl font-bold tracking-tight mb-2 text-blue-300">Juniors</h1>
           <h1 className="text-6xl font-bold tracking-tight mb-4 text-white flex items-center justify-center">
             Jobs <FiSearch className="ml-2 text-blue-300" size={40} />
@@ -282,12 +376,11 @@ function HomePage() {
                 {alertMessage}
               </div>
             )}
-          </div>
-        </div>
+          </div></div>
         <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-indigo-900 to-transparent z-0" />
       </header>
 
-      {resultsVisible && (
+      {hasLoadedLocalStorage && resultsVisible && (
         <div ref={resultsRef} className="py-12" style={{ background: 'linear-gradient(to bottom right, #0d47a1, #3f51b5)' }}>
           <div className="container mx-auto">
             <h2 className="text-2xl font-semibold text-white mb-6 text-center">
@@ -311,6 +404,16 @@ function HomePage() {
                 </li>
               ))}
             </ul>
+            {vacancies.length > 0 && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={handleClearSearch}
+                  className="bg-red-500 hover:bg-red-600 text-white py-3 px-8 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-red-400"
+                >
+                  Limpiar Búsqueda
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
