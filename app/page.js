@@ -5,9 +5,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from './components/Navbar';
 import { FiSearch } from 'react-icons/fi';
-import './styles.css'; // Asegúrate de tener este archivo CSS
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import './styles.css';
+import { differenceInDays } from 'date-fns';
 
 const platforms = [
   { name: 'LinkedIn', authUrl: '/api/auth/linkedin', connected: false },
@@ -16,9 +15,10 @@ const platforms = [
 ];
 
 function HomePage() {
-  const [connectedPlatforms, setConnectedPlatforms] = useState(
-    platforms.reduce((acc, platform) => ({ ...acc, [platform.name]: platform.connected }), {})
-  );
+  const [connectedPlatforms, setConnectedPlatforms] = useState(() => {
+    const storedState = localStorage.getItem('connectedPlatforms');
+    return storedState ? JSON.parse(storedState) : platforms.reduce((acc, platform) => ({ ...acc, [platform.name]: platform.connected }), {});
+  });
   const [searching, setSearching] = useState(false);
   const [vacancies, setVacancies] = useState([]);
   const router = useRouter();
@@ -35,13 +35,14 @@ function HomePage() {
   const isAnyPlatformConnected = Object.values(connectedPlatforms).some(connected => connected);
 
   const handleConnectPlatform = (platformName, authUrl) => {
-    if (platformName === 'GetOnBoard') {
-      setConnectedPlatforms(prev => ({ ...prev, [platformName]: true }));
-      console.log('connectedPlatforms después de GetOnBoard:', { ...connectedPlatforms, [platformName]: true });
-    } else {
-      window.location.href = authUrl;
-      console.log('Redirigiendo para LinkedIn. connectedPlatforms:', connectedPlatforms);
-    }
+    console.log('handleConnectPlatform llamada:', { platformName, authUrl, currentConnectedPlatforms: connectedPlatforms });
+    setConnectedPlatforms(prev => {
+      const isCurrentlyConnected = prev[platformName];
+      const newState = { ...prev };
+      newState[platformName] = !isCurrentlyConnected;
+      localStorage.setItem('connectedPlatforms', JSON.stringify(newState));
+      return newState;
+    });
   };
 
   const handleSearchVacancies = async () => {
@@ -49,7 +50,7 @@ function HomePage() {
     if (!isAnyPlatformConnected && !searching) {
       setAlertMessage('¡Ups! Conecta al menos una plataforma para buscar empleos.');
       setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000); // Ocultar la alerta después de 3 segundos
+      setTimeout(() => setShowAlert(false), 3000);
       return;
     }
 
@@ -87,6 +88,8 @@ function HomePage() {
           return linkedinVacancies.map(vacancy => ({
             ...vacancy,
             source: 'LinkedIn',
+            published_at: vacancy.published_at,
+            daysAgo: vacancy.published_at ? differenceInDays(new Date(), new Date(vacancy.published_at)) : null,
           }));
         })
         .catch(error => {
@@ -174,13 +177,54 @@ function HomePage() {
   };
 
   useEffect(() => {
+    const storedState = localStorage.getItem('connectedPlatforms');
+    if (storedState) {
+      setConnectedPlatforms(JSON.parse(storedState));
+    }
+
+    const linkedinConnected = searchParams.get('linkedin_connected');
+    const getonboardConnected = searchParams.get('getonboard_connected');
+
+    console.log('useEffect de conexión activado:', { linkedinConnected, getonboardConnected });
+    console.log('Estado de connectedPlatforms antes de la actualización:', connectedPlatforms);
+
+    if (linkedinConnected === 'true') {
+      setConnectedPlatforms(prev => {
+        const newState = { ...prev, LinkedIn: true };
+        localStorage.setItem('connectedPlatforms', JSON.stringify(newState));
+        console.log('LinkedIn conectado (por parámetro). Nuevo estado:', newState);
+        return newState;
+      });
+    }
+
+    if (getonboardConnected === 'true') {
+      setConnectedPlatforms(prev => {
+        const newState = { ...prev, GetOnBoard: true };
+        localStorage.setItem('connectedPlatforms', JSON.stringify(newState));
+        console.log('GetOnBoard conectado (por parámetro). Nuevo estado:', newState);
+        return newState;
+      });
+    }
+
+    if (linkedinConnected === 'true' || getonboardConnected === 'true') {
+      console.log('Limpiando parámetros de la URL.');
+      router.replace('/'); // Limpiar los parámetros de la URL
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    localStorage.setItem('connectedPlatforms', JSON.stringify(connectedPlatforms));
+  }, [connectedPlatforms]);
+
+  useEffect(() => {
     if (searchCompleted) {
       let message = '';
       if (linkedinVacanciesCount > 0 || getOnBoardVacanciesCount > 0) {
         const linkedinMessage = linkedinVacanciesCount > 0 ? `LinkedIn(${linkedinVacanciesCount})` : '';
         const getOnBoardMessage = getOnBoardVacanciesCount > 0 ? `GetOnBoard(${getOnBoardVacanciesCount})` : '';
-        const conjunction = linkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' , ' : '';
-        message = `${linkedinMessage}${conjunction}${getOnBoardMessage}`;
+        const conjunction = linkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' ,  ' : '';
+        message = `Se encontraron ${linkedinMessage}${conjunction}${getOnBoardMessage} ofertas de empleo para juniors.`;
       } else if (isAnyPlatformConnected) {
         message = 'No se encontraron ofertas de empleo para juniors con los criterios actuales.';
       } else {
@@ -189,21 +233,6 @@ function HomePage() {
       setSearchMessage(message);
     }
   }, [searchCompleted, linkedinVacanciesCount, getOnBoardVacanciesCount, connectedPlatforms, isAnyPlatformConnected]);
-
-  useEffect(() => {
-    const linkedinConnected = searchParams.get('linkedin_connected');
-    const getonboardConnected = searchParams.get('getonboard_connected');
-
-    if (linkedinConnected === 'true') {
-      setConnectedPlatforms(prev => ({ ...prev, LinkedIn: true }));
-      router.replace('/');
-    }
-
-    if (getonboardConnected === 'true') {
-      setConnectedPlatforms(prev => ({ ...prev, GetOnBoard: true }));
-      router.replace('/');
-    }
-  }, [searchParams, router]);
 
   console.log('connectedPlatforms al renderizar:', connectedPlatforms);
   console.log('isAnyPlatformConnected al renderizar:', isAnyPlatformConnected);
@@ -225,19 +254,26 @@ function HomePage() {
               <button
                 key={platform.name}
                 onClick={() => handleConnectPlatform(platform.name, platform.authUrl)}
-                className={`bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                className={`bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 flex flex-col items-center justify-center ${
                   connectedPlatforms[platform.name] ? 'bg-green-500 hover:bg-green-600 focus:ring-green-400' : ''
                 }`}
-                disabled={connectedPlatforms[platform.name]}
+                disabled={searching}
+                style={{ minHeight: '80px' }}
               >
-                {connectedPlatforms[platform.name] ? <span className="flex items-center"><svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>Conectado a {platform.name}</span> : `Conectar con ${platform.name}`}
+                <span className="flex items-center justify-center">
+                  {connectedPlatforms[platform.name] ? <><svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>Conectado a {platform.name}</> : `Conectar con ${platform.name}`}
+                </span>
+                {connectedPlatforms[platform.name] && (
+                  <span className="text-xs font-normal mt-1">(Haz click para desconectar)</span>
+                )}
               </button>
             ))}
           </div>
-          <div className="relative"> {/* Añadimos un contenedor relativo para la alerta */}
+          <div className="relative mt-4">
             <button
               onClick={handleSearchVacancies}
-              className="mt-6 bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-green-400"
+              className="bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-green-400"
+              disabled={searching}
             >
               {searching ? <span className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2 border-t-2 border-b-2 border-white rounded-full" viewBox="0 0 24 24"></svg>Buscando...</span> : 'Buscar Empleos'}
             </button>
@@ -263,15 +299,10 @@ function HomePage() {
                 <li key={vacancy.id} className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition duration-300">
                   <h3 className="text-xl font-semibold text-blue-700 mb-2">{vacancy.title}</h3>
                   <p className="text-gray-700 mb-2"><span className="font-semibold">Empresa:</span> {vacancy.company}</p>
-                  {vacancy.location && <p className="text-gray-700 mb-2"><span className="font-semibold">Ubicación:</span> {vacancy.location}</p>}
                   <p className="text-gray-700 mb-2"><span className="font-semibold">Fuente:</span> {vacancy.source}</p>
-                  {vacancy.published_at && (
+                  {vacancy.published_at && vacancy.source === 'LinkedIn' && (
                     <p className="text-gray-700 mb-2">
-                      <span className="font-semibold">Publicado hace:</span>{' '}
-                      {formatDistanceToNow(new Date(vacancy.published_at), {
-                        locale: es,
-                        addSuffix: true,
-                      })}
+                      <span className="font-semibold">Publicado hace:</span> {vacancy.daysAgo !== null ? `${vacancy.daysAgo} día${vacancy.daysAgo !== 1 ? 's' : ''}` : 'Fecha no disponible'}
                     </p>
                   )}
                   <a href={vacancy.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">
