@@ -30,6 +30,8 @@ function HomePage() {
   const [getOnBoardVacanciesCount, setGetOnBoardVacanciesCount] = useState(0);
   const [searchCompleted, setSearchCompleted] = useState(false); // Nuevo estado para indicar que la búsqueda terminó
 
+  const isAnyPlatformConnected = Object.values(connectedPlatforms).some(connected => connected);
+
   const handleConnectPlatform = (platformName, authUrl) => {
     if (platformName === 'GetOnBoard') {
       setConnectedPlatforms(prev => ({ ...prev, [platformName]: true }));
@@ -161,18 +163,18 @@ function HomePage() {
     if (searchCompleted) {
       let message = '';
       if (linkedinVacanciesCount > 0 || getOnBoardVacanciesCount > 0) {
-        const linkedinMessage = linkedinVacanciesCount > 0 ? `LinkendIn(${linkedinVacanciesCount})` : '';
-        const getOnBoardMessage = getOnBoardVacanciesCount > 0 ? `GetOnBoard(${getOnBoardVacanciesCount})` : '';
+        const linkedinMessage = linkedinVacanciesCount > 0 ? `${linkedinVacanciesCount} de LinkedIn` : '';
+        const getOnBoardMessage = getOnBoardVacanciesCount > 0 ? `${getOnBoardVacanciesCount} de GetOnBoard` : '';
         const conjunction = linkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' y ' : '';
-        message = `${linkedinMessage}${conjunction}${getOnBoardMessage}`;
-      } else if (Object.values(connectedPlatforms).some(connected => connected)) {
+        message = `Se encontraron ${linkedinMessage}${conjunction}${getOnBoardMessage} ofertas de empleo para juniors.`;
+      } else if (isAnyPlatformConnected) {
         message = 'No se encontraron ofertas de empleo para juniors con los criterios actuales.';
       } else {
         message = 'Por favor, conecta al menos una plataforma antes de buscar.';
       }
       setSearchMessage(message);
     }
-  }, [searchCompleted, linkedinVacanciesCount, getOnBoardVacanciesCount, connectedPlatforms]);
+  }, [searchCompleted, linkedinVacanciesCount, getOnBoardVacanciesCount, connectedPlatforms, isAnyPlatformConnected]);
 
   useEffect(() => {
     const linkedinConnected = searchParams.get('linkedin_connected');
@@ -219,11 +221,12 @@ function HomePage() {
           <button
             onClick={handleSearchVacancies}
             className="mt-6 bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-green-400"
-            disabled={searching || Object.values(connectedPlatforms).every(connected => !connected)}
+            disabled={searching || !isAnyPlatformConnected} // Deshabilitar si no hay plataformas conectadas
+            title={!isAnyPlatformConnected ? 'Por favor, conecta al menos una plataforma para buscar vacantes.' : ''} // Mensaje al hacer hover
           >
             {searching ? <span className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2 border-t-2 border-b-2 border-white rounded-full" viewBox="0 0 24 24"></svg>Buscando...</span> : 'Buscar Empleos'}
           </button>
-          {/* El mensaje ahora estará en el encabezado de resultados */}
+          {/* El mensaje de la búsqueda ahora está en el encabezado de resultados */}
         </div>
         <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-indigo-900 to-transparent z-0" />
       </header>
