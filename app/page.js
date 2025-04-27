@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from './components/Navbar';
 import { FiSearch } from 'react-icons/fi';
-import './styles.css'; // Importa un archivo CSS para la animación
+import './styles.css'; // Asegúrate de tener este archivo CSS
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -24,31 +24,43 @@ function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resultsRef = useRef(null);
-  const [searchMessage, setSearchMessage] = useState(''); // Inicializar con cadena vacía
+  const [searchMessage, setSearchMessage] = useState('');
   const [resultsVisible, setResultsVisible] = useState(false);
   const [linkedinVacanciesCount, setLinkedinVacanciesCount] = useState(0);
   const [getOnBoardVacanciesCount, setGetOnBoardVacanciesCount] = useState(0);
-  const [searchCompleted, setSearchCompleted] = useState(false); // Nuevo estado para indicar que la búsqueda terminó
+  const [searchCompleted, setSearchCompleted] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   const isAnyPlatformConnected = Object.values(connectedPlatforms).some(connected => connected);
 
   const handleConnectPlatform = (platformName, authUrl) => {
     if (platformName === 'GetOnBoard') {
       setConnectedPlatforms(prev => ({ ...prev, [platformName]: true }));
+      console.log('connectedPlatforms después de GetOnBoard:', { ...connectedPlatforms, [platformName]: true });
     } else {
       window.location.href = authUrl;
+      console.log('Redirigiendo para LinkedIn. connectedPlatforms:', connectedPlatforms);
     }
   };
 
   const handleSearchVacancies = async () => {
+    console.log('handleSearchVacancies llamada');
+    if (!isAnyPlatformConnected && !searching) {
+      setAlertMessage('¡Ups! Conecta al menos una plataforma para buscar empleos.');
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000); // Ocultar la alerta después de 3 segundos
+      return;
+    }
+
     console.log('Botón de Buscar Vacantes clickeado');
-    setSearchMessage('Buscando vacantes...'); // Establecer el mensaje al inicio
+    setSearchMessage('Buscando vacantes...');
     setSearching(true);
     setVacancies([]);
     setResultsVisible(false);
     setLinkedinVacanciesCount(0);
     setGetOnBoardVacanciesCount(0);
-    setSearchCompleted(false); // Resetear el estado de finalización
+    setSearchCompleted(false);
     const searchPromises = [];
 
     if (connectedPlatforms['LinkedIn']) {
@@ -71,7 +83,7 @@ function HomePage() {
         .then(data => {
           console.log('Datos de vacantes de LinkedIn recibidos:', data);
           const linkedinVacancies = data?.vacancies || [];
-          setLinkedinVacanciesCount(linkedinVacancies.length); // Actualizar el contador aquí
+          setLinkedinVacanciesCount(linkedinVacancies.length);
           return linkedinVacancies.map(vacancy => ({
             ...vacancy,
             source: 'LinkedIn',
@@ -105,14 +117,14 @@ function HomePage() {
           console.log('Datos de vacantes de GetOnBoard recibidos:', data);
           console.log('Estructura de datos de GetOnBoard:', data);
           const onboardVacanciesData = data?.data || [];
-          setGetOnBoardVacanciesCount(onboardVacanciesData.length); // Actualizar el contador aquí
+          setGetOnBoardVacanciesCount(onboardVacanciesData.length);
           return onboardVacanciesData.map(job => ({
             id: job.id,
             title: job.attributes.title,
             company: job.attributes.company?.data?.attributes?.name || 'Nombre de empresa no disponible',
             url: `https://www.getonbrd.com/jobs/${job.id}`,
             source: 'GetOnBoard',
-            published_at: job.attributes.published_at, // Asegúrate de tener published_at si lo usas
+            published_at: job.attributes.published_at,
           }));
         })
         .catch(error => {
@@ -130,7 +142,7 @@ function HomePage() {
       const flattenedVacancies = allVacancies.flat();
       console.log('Vacantes combinadas:', flattenedVacancies);
       setVacancies(flattenedVacancies);
-      setSearchCompleted(true); // Indicar que la búsqueda ha terminado
+      setSearchCompleted(true);
 
       if (flattenedVacancies.length > 0) {
         setResultsVisible(true);
@@ -150,8 +162,10 @@ function HomePage() {
     } catch (error) {
       setSearchMessage('Error al buscar vacantes.');
       console.error('Error al resolver las promesas:', error);
-      alert(error.message);
-      setSearchCompleted(true); // Indicar finalización incluso en caso de error
+      setAlertMessage(error.message);
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      setSearchCompleted(true);
       setResultsVisible(false);
     } finally {
       setSearching(false);
@@ -163,10 +177,10 @@ function HomePage() {
     if (searchCompleted) {
       let message = '';
       if (linkedinVacanciesCount > 0 || getOnBoardVacanciesCount > 0) {
-        const linkedinMessage = linkedinVacanciesCount > 0 ? `${linkedinVacanciesCount} de LinkedIn` : '';
-        const getOnBoardMessage = getOnBoardVacanciesCount > 0 ? `${getOnBoardVacanciesCount} de GetOnBoard` : '';
-        const conjunction = linkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' y ' : '';
-        message = `Se encontraron ${linkedinMessage}${conjunction}${getOnBoardMessage} ofertas de empleo para juniors.`;
+        const linkedinMessage = linkedinVacanciesCount > 0 ? `LinkedIn(${linkedinVacanciesCount})` : '';
+        const getOnBoardMessage = getOnBoardVacanciesCount > 0 ? `GetOnBoard(${getOnBoardVacanciesCount})` : '';
+        const conjunction = linkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' , ' : '';
+        message = `${linkedinMessage}${conjunction}${getOnBoardMessage}`;
       } else if (isAnyPlatformConnected) {
         message = 'No se encontraron ofertas de empleo para juniors con los criterios actuales.';
       } else {
@@ -178,7 +192,7 @@ function HomePage() {
 
   useEffect(() => {
     const linkedinConnected = searchParams.get('linkedin_connected');
-    const getonboardConnected = searchParams.get('getonboard_connected'); // Nuevo parámetro
+    const getonboardConnected = searchParams.get('getonboard_connected');
 
     if (linkedinConnected === 'true') {
       setConnectedPlatforms(prev => ({ ...prev, LinkedIn: true }));
@@ -189,8 +203,10 @@ function HomePage() {
       setConnectedPlatforms(prev => ({ ...prev, GetOnBoard: true }));
       router.replace('/');
     }
-    // Aquí iría la lógica para verificar si ya hay cuentas conectadas
   }, [searchParams, router]);
+
+  console.log('connectedPlatforms al renderizar:', connectedPlatforms);
+  console.log('isAnyPlatformConnected al renderizar:', isAnyPlatformConnected);
 
   return (
     <div className="bg-gradient-to-br from-blue-900 to-indigo-900 min-h-screen text-white">
@@ -218,15 +234,19 @@ function HomePage() {
               </button>
             ))}
           </div>
-          <button
-            onClick={handleSearchVacancies}
-            className="mt-6 bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-green-400"
-            disabled={searching || !isAnyPlatformConnected} // Deshabilitar si no hay plataformas conectadas
-            title={!isAnyPlatformConnected ? 'Por favor, conecta al menos una plataforma para buscar vacantes.' : ''} // Mensaje al hacer hover
-          >
-            {searching ? <span className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2 border-t-2 border-b-2 border-white rounded-full" viewBox="0 0 24 24"></svg>Buscando...</span> : 'Buscar Empleos'}
-          </button>
-          {/* El mensaje de la búsqueda ahora está en el encabezado de resultados */}
+          <div className="relative"> {/* Añadimos un contenedor relativo para la alerta */}
+            <button
+              onClick={handleSearchVacancies}
+              className="mt-6 bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-green-400"
+            >
+              {searching ? <span className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2 border-t-2 border-b-2 border-white rounded-full" viewBox="0 0 24 24"></svg>Buscando...</span> : 'Buscar Empleos'}
+            </button>
+            {showAlert && (
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-red-500 text-white py-3 px-6 rounded-md shadow-lg z-50">
+                {alertMessage}
+              </div>
+            )}
+          </div>
         </div>
         <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-indigo-900 to-transparent z-0" />
       </header>
