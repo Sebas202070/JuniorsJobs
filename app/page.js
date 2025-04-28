@@ -393,7 +393,7 @@ function HomePage() {
                 const linkedinMessage = linkedinVacanciesCount > 0 ? `LinkedIn(${linkedinVacanciesCount})` : '';
                 const getOnBoardMessage = getOnBoardVacanciesCount > 0 ? `GetOnBoard(${getOnBoardVacanciesCount})` : '';
                 const conjunction = linkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' ,  ' : '';
-                message = `<span class="math-inline">\{linkedinMessage\}</span>{conjunction}${getOnBoardMessage}`;
+                message = `${linkedinMessage}${conjunction}${getOnBoardMessage}`;
             } else if (isAnyPlatformConnected) {
                 message = 'No se encontraron ofertas de empleo para juniors con los criterios actuales.';
             } else {
@@ -451,12 +451,15 @@ function HomePage() {
                             {searching ? <span className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2 border-t-2 border-b-2 border-white rounded-full" viewBox="0 0 24 24"></svg>Buscando...</span> : 'Buscar Empleos'}
                         </button>
                         {showAlert && (
-                            <div className="sm:absolute sm:top-full sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:mt-2 sm:max-w-md bg-red-500 text-white px-6 rounded-md shadow-lg z-50 text-center sm:py-3
-                                fixed bottom-6 left-0 w-full rounded-t-md py-2
-                            ">
-                                {alertMessage}
-                            </div>
-                        )}
+    <div
+        className={`sm:absolute sm:top-full sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:mt-2 sm:max-w-md bg-red-500 text-white px-6 rounded-md shadow-lg z-50 text-center sm:py-3
+                    fixed bottom-6 left-0 w-full rounded-t-md py-2 ${alertMessage.length > 0 ? 'min-h-[60px] sm:min-h-0' : ''}
+                `}
+        style={{ minHeight: alertMessage.length > 0 && window.innerWidth >= 640 ? '60px' : undefined }}
+    >
+        {alertMessage}
+    </div>
+)}
                     </div>
                 </div>
                 <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-indigo-900 to-transparent z-0" />
