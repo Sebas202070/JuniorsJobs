@@ -317,7 +317,7 @@ function HomePage() {
       if (linkedinVacanciesCount > 0 || getOnBoardVacanciesCount > 0) {
         const linkedinMessage = linkedinVacanciesCount > 0 ? `LinkedIn(${linkedinVacanciesCount})` : '';
         const getOnBoardMessage = getOnBoardVacanciesCount > 0 ? `GetOnBoard(${getOnBoardVacanciesCount})` : '';
-        const conjunction =  linkedinMessagelinkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' ,  ' : '';
+        const conjunction = linkedinVacanciesCount > 0 && getOnBoardVacanciesCount > 0 ? ' ,  ' : '';
         message = `${linkedinMessage}${conjunction}${getOnBoardMessage}`;
       } else if (isAnyPlatformConnected) {
         message = 'No se encontraron ofertas de empleo para juniors con los criterios actuales.';
@@ -372,10 +372,10 @@ function HomePage() {
               {searching ? <span className="flex items-center"><svg className="animate-spin h-5 w-5 mr-2 border-t-2 border-b-2 border-white rounded-full" viewBox="0 0 24 24"></svg>Buscando...</span> : 'Buscar Empleos'}
             </button>
             {showAlert && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-red-500 text-white py-3 px-6 rounded-md shadow-lg z-50">
-                {alertMessage}
-              </div>
-            )}
+  <div className="fixed bottom-0 left-0 w-full bg-red-500 text-white py-3 px-6 rounded-t-md shadow-md z-50 text-center mt-12 sm:absolute sm:top-full sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:mt-2 sm:max-w-md">
+    {alertMessage}
+  </div>
+)}
           </div></div>
         <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-indigo-900 to-transparent z-0" />
       </header>
