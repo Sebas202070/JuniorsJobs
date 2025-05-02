@@ -571,7 +571,7 @@ function HomePage() {
                     src={platform.logo}
                     alt={`${platform.name} Logo`}
                     className="w-auto h-auto object-contain" // Ajustamos object-fit
-                    style={{ maxHeight: '30px', maxWidth: '100%' }}
+                    style={{ maxHeight: '32px', maxWidth: '100%' }}
                 />
             </div>
             <span className="text-xs">
@@ -582,7 +582,7 @@ function HomePage() {
         </button>
     ))}
 </div>
-                    <div className="relative mt-1 sm:mt-4">
+                    <div className="relative mt-4 sm:mt-4">
                         <button
                             onClick={handleSearchVacancies}
                             className="bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-green-400"
