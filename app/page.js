@@ -7,11 +7,15 @@ import Navbar from './components/Navbar';
 import { FiSearch } from 'react-icons/fi';
 import './styles.css';
 import { differenceInDays } from 'date-fns';
+import linkedinLogo from '/public/linkedin.png';
+import getonboardLogo from '/public/getonboard.png';
+import adzunaLogo from '/public/adzuna.png';
+import Image from 'next/image';
 
 const platforms = [
-    { name: 'LinkedIn', authUrl: '/api/auth/linkedin', connected: false },
-    { name: 'GetOnBoard', authUrl: '/api/auth/getonboard', connected: false },
-    { name: 'Adzuna Jobs', connected: false },
+    { name: 'LinkedIn', authUrl: '/api/auth/linkedin', connected: false, logo: linkedinLogo },
+    { name: 'GetOnBoard', authUrl: '/api/auth/getonboard', connected: false, logo: getonboardLogo },
+    { name: 'Adzuna Jobs', connected: false, logo: adzunaLogo },
 ];
 
 function HomePage() {
@@ -348,7 +352,7 @@ function HomePage() {
         setGetOnBoardVacanciesCount(0);
         setAdzunaJobsVacanciesCount(0);
         setSearchCompleted(false);
-        setSeenVacancies(new Set());
+        
 
         const searchPromises = [];
 
@@ -448,7 +452,7 @@ function HomePage() {
         setGetOnBoardVacanciesCount(0);
         setAdzunaJobsVacanciesCount(0);
         setSearchCompleted(false);
-        setSeenVacancies(new Set());
+        
         setVacanciesToShow(20);
     }, []);
 
@@ -543,37 +547,42 @@ function HomePage() {
             <Navbar />
             <header className="relative overflow-hidden py-16 md:py-24">
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-700 via-indigo-700 to-purple-800 opacity-70 z-0" />
-                <div className="container -mt-10 mx-auto text-center relative z-10 px-4 md:px-8">
+                <div className="container -mt-14 mx-auto text-center relative z-10 px-4 md:px-8">
                     <h1 className="text-6xl font-bold tracking-tight mb-2 text-blue-300">Juniors</h1>
                     <h1 className="text-6xl font-bold tracking-tight mb-4 text-white flex items-center justify-center">
                         Jobs <FiSearch className="ml-2 text-blue-300" size={40} />
                     </h1>
                     <p className="text-lg opacity-80 mb-6">Impulsando tu primer empleo</p>
                     <p className="text-lg opacity-80 mb-8">Conecta plataformas, descubre oportunidades y da el salto a tu carrera.</p>
-                    <div className="flex justify-center space-x-4">
-                        {platforms.map((platform) => (
-                            <button
-                                key={platform.name}
-                                onClick={() => handleConnectPlatform(platform.name, platform.authUrl)}
-                                className={`bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400 flex flex-col items-center justify-center ${
-                                    connectedPlatforms[platform.name] ? 'bg-green-500 hover:bg-green-600 focus:ring-green-400' : ''
-                                }`}
-                                disabled={searching}
-                                style={{ minHeight: '80px' }}
-                            >
-                                <span className="flex items-center justify-center">
-                                    {connectedPlatforms[platform.name] ? <><svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>Conectado a {platform.name}</> : `Conectar con ${platform.name}`}
-                                </span>
-                                {connectedPlatforms[platform.name] && (
-                                    <span className="text-xs font-normal mt-1">(Haz click para desconectar)</span>
-                                )}
-                                {!connectedPlatforms[platform.name] && platform.name === 'LinkedIn' && (
-                                    <span className="text-xs font-normal mt-1">(Requiere autenticación)</span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="relative mt-4">
+                    <div className="flex justify-center space-x-2 md:space-x-4 flex-wrap">
+    {platforms.map((platform) => (
+        <button
+            key={platform.name}
+            onClick={() => handleConnectPlatform(platform.name, platform.authUrl)}
+            className={`rounded-md shadow-md transition duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500  px-2 mb-2 flex flex-col items-center justify-center text-center
+                ${connectedPlatforms[platform.name]
+                    ? 'bg-green-500 text-white'
+                    : 'bg-white text-blue-700 hover:bg-blue-50 active:bg-blue-100 active:shadow-sm'
+                }`}
+            style={{ minWidth: '160px', height: '80px' }} // Establecemos una altura fija para el botón
+        >
+            <div className="w-full h-auto flex items-center justify-center mb-1" style={{ maxHeight: '40px' }}>
+                <Image
+                    src={platform.logo}
+                    alt={`${platform.name} Logo`}
+                    className="w-auto h-auto object-contain" // Ajustamos object-fit
+                    style={{ maxHeight: '30px', maxWidth: '100%' }}
+                />
+            </div>
+            <span className="text-xs">
+                {connectedPlatforms[platform.name]
+                    ? (sessionStorage.getItem('linkedinToken') || connectedPlatforms['GetOnBoard'] || connectedPlatforms['Adzuna Jobs']) ? 'Desconectar' : 'Conectado'
+                    : 'Conectar'}
+            </span>
+        </button>
+    ))}
+</div>
+                    <div className="relative mt-1 sm:mt-4">
                         <button
                             onClick={handleSearchVacancies}
                             className="bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-full transition duration-300 font-semibold focus:outline-none focus:ring-2 focus:ring-green-400"
@@ -583,8 +592,8 @@ function HomePage() {
                         </button>
                         {showAlert && (
                             <div
-                                className={`sm:absolute sm:top-full sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:mt-2 sm:max-w-md bg-red-500 text-white px-6 rounded-md shadow-lg z-50 text-center sm:py-3
-                                    fixed bottom-6 left-0 w-full rounded-t-md py-2 ${alertMessage.length > 0 ? 'min-h-[60px] sm:min-h-0' : ''}
+                                className={`sm:absolute sm:top-full sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:mt-2 sm:max-w-md bg-red-500 text-white px-6 rounded-md shadow-lg z-50 text-center sm:py-1
+                                    fixed bottom-6 left-0 w-full rounded-t-md py-1 ${alertMessage.length > 0 ? 'min-h-[60px] sm:min-h-0' : ''}
                                 `}
                                 style={{ minHeight: alertMessage.length > 0 && window.innerWidth >= 640 ? '60px' : undefined }}
                             >
