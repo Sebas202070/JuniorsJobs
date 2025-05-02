@@ -1,4 +1,3 @@
-
 // src/app/page.js
 'use client';
 
@@ -19,9 +18,29 @@ function HomePage() {
     const [linkedinToken, setLinkedinToken] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('linkedinToken') || null : null));
     const [connectedPlatforms, setConnectedPlatforms] = useState(() => (typeof window !== 'undefined' ? JSON.parse(sessionStorage.getItem('connectedPlatforms')) || platforms.reduce((acc, p) => ({ ...acc, [p.name]: false }), {}) : platforms.reduce((acc, p) => ({ ...acc, [p.name]: false }), {})));
     const [searching, setSearching] = useState(false);
-    const [allVacancies, setAllVacancies] = useState(() => (typeof window !== 'undefined' ? JSON.parse(sessionStorage.getItem('allVacancies')) || [] : []));
-    const [visibleVacancies, setVisibleVacancies] = useState(() => (typeof window !== 'undefined' ? JSON.parse(sessionStorage.getItem('visibleVacancies')) || [] : []));
-    const [vacanciesToShow, setVacanciesToShow] = useState(20);
+    const [allVacancies, setAllVacancies] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const storedVacancies = sessionStorage.getItem('allVacancies');
+            return storedVacancies ? JSON.parse(storedVacancies) : [];
+        }
+        return [];
+    });
+    const [visibleVacancies, setVisibleVacancies] = useState(() => {
+        if (typeof window !== 'undefined' && sessionStorage.getItem('allVacancies')) {
+            const storedVacancies = JSON.parse(sessionStorage.getItem('allVacancies'));
+            const storedToShow = sessionStorage.getItem('vacanciesToShow');
+            const initialToShow = storedToShow ? parseInt(storedToShow, 10) : 20;
+            return storedVacancies.slice(0, initialToShow);
+        }
+        return [];
+    });
+    const [vacanciesToShow, setVacanciesToShow] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const storedToShow = sessionStorage.getItem('vacanciesToShow');
+            return storedToShow ? parseInt(storedToShow, 10) : 20;
+        }
+        return 20;
+    });
     const [seenVacancies, setSeenVacancies] = useState(() => {
         if (typeof window !== 'undefined') {
             const storedSeenVacancies = sessionStorage.getItem('seenVacancies');
@@ -62,15 +81,42 @@ function HomePage() {
             const storedAllVacancies = sessionStorage.getItem('allVacancies');
             if (storedAllVacancies) {
                 setAllVacancies(JSON.parse(storedAllVacancies));
-                setVisibleVacancies(JSON.parse(storedAllVacancies).slice(0, vacanciesToShow));
             }
             const storedSeenVacancies = sessionStorage.getItem('seenVacancies');
             if (storedSeenVacancies) {
-                setSeenVacancies(new Set(JSON.parse(storedSeenVacancies)));
+                try {
+                    setSeenVacancies(new Set(JSON.parse(storedSeenVacancies)));
+                } catch (error) {
+                    console.error("Error parsing seenVacancies from sessionStorage:", error);
+                }
             }
             const storedVacanciesToShow = sessionStorage.getItem('vacanciesToShow');
             if (storedVacanciesToShow) {
                 setVacanciesToShow(parseInt(storedVacanciesToShow, 10));
+            }
+            const storedSearchMessage = sessionStorage.getItem('searchMessage');
+            if (storedSearchMessage) {
+                setSearchMessage(storedSearchMessage);
+            }
+            const storedResultsVisible = sessionStorage.getItem('resultsVisible');
+            if (storedResultsVisible) {
+                setResultsVisible(storedResultsVisible === 'true');
+            }
+            const storedLinkedinVacanciesCount = sessionStorage.getItem('linkedinVacanciesCount');
+            if (storedLinkedinVacanciesCount) {
+                setLinkedinVacanciesCount(parseInt(storedLinkedinVacanciesCount, 10));
+            }
+            const storedGetOnBoardVacanciesCount = sessionStorage.getItem('getOnBoardVacanciesCount');
+            if (storedGetOnBoardVacanciesCount) {
+                setGetOnBoardVacanciesCount(parseInt(storedGetOnBoardVacanciesCount, 10));
+            }
+            const storedAdzunaJobsVacanciesCount = sessionStorage.getItem('adzunaJobsVacanciesCount');
+            if (storedAdzunaJobsVacanciesCount) {
+                setAdzunaJobsVacanciesCount(parseInt(storedAdzunaJobsVacanciesCount, 10));
+            }
+            const storedSearchCompleted = sessionStorage.getItem('searchCompleted');
+            if (storedSearchCompleted) {
+                setSearchCompleted(storedSearchCompleted === 'true');
             }
             setHasLoadedSessionStorage(true);
         }
@@ -84,13 +130,14 @@ function HomePage() {
             sessionStorage.setItem('seenVacancies', JSON.stringify(Array.from(seenVacancies)));
             sessionStorage.setItem('vacanciesToShow', vacanciesToShow.toString());
             sessionStorage.setItem('searchMessage', searchMessage);
+            sessionStorage.setItem('resultsVisible', resultsVisible.toString());
             sessionStorage.setItem('linkedinVacanciesCount', linkedinVacanciesCount.toString());
             sessionStorage.setItem('getOnBoardVacanciesCount', getOnBoardVacanciesCount.toString());
             sessionStorage.setItem('adzunaJobsVacanciesCount', adzunaJobsVacanciesCount.toString());
             sessionStorage.setItem('searchCompleted', searchCompleted.toString());
             sessionStorage.setItem('linkedinToken', linkedinToken || '');
         }
-    }, [connectedPlatforms, allVacancies, visibleVacancies, seenVacancies, vacanciesToShow, searchMessage, linkedinVacanciesCount, getOnBoardVacanciesCount, adzunaJobsVacanciesCount, searchCompleted, linkedinToken]);
+    }, [connectedPlatforms, allVacancies, visibleVacancies, seenVacancies, vacanciesToShow, searchMessage, resultsVisible, linkedinVacanciesCount, getOnBoardVacanciesCount, adzunaJobsVacanciesCount, searchCompleted, linkedinToken]);
 
     const handleConnectPlatform = async (platformName, authUrl) => {
         console.log('handleConnectPlatform llamada:', { platformName, authUrl, currentConnectedPlatforms: connectedPlatforms });
@@ -158,7 +205,7 @@ function HomePage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams, router]);
 
-   
+
     const searchAdzunaJobs = useCallback(async (keywords, location) => {
         let url = `/api/jobs?keywords=${encodeURIComponent(keywords)}`;
         if (location) {
@@ -191,7 +238,7 @@ function HomePage() {
         const perPage = 100; // Mantenemos la variable por si luego se soluciona el problema
         let page = 1;
         let allVacancies = [];
-    
+
         while (true) {
             const url = `https://www.getonbrd.com/api/v0/search/jobs?query=junior&country_code=AR&expand=["company"]&per_page=5&page=${page}`; // Hardcodeamos per_page a 5
             try {
@@ -205,7 +252,7 @@ function HomePage() {
                 console.log(`GetOnBoard Response Status (page ${page}):`, response.status);
                 const responseText = await response.text();
                 console.log(`GetOnBoard Response Text (page ${page}):`, responseText);
-    
+
                 if (!response.ok) {
                     let errorData;
                     try {
@@ -216,7 +263,7 @@ function HomePage() {
                     console.error(`Error al buscar vacantes en GetOnBoard (página ${page}):`, errorData);
                     break;
                 }
-    
+
                 const data = JSON.parse(responseText);
                 console.log('Respuesta de GetOnBoard (estructura completa):', data);
                 const onboardVacanciesData = data?.data || [];
@@ -483,7 +530,7 @@ function HomePage() {
                 <button onClick={() => handleViewDetails(vacancy.url, vacancy.id)} className="text-blue-500 hover:underline font-semibold focus:outline-none">
                     Ver detalles <svg className="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </button>
-                
+
                 {seenVacancies.has(vacancy.id) && <span className="text-green-500 font-semibold">Visto</span>}
             </div>
         </li>
