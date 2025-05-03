@@ -16,7 +16,7 @@ export async function GET(request) {
         return NextResponse.json({ error: 'API credentials not configured' }, { status: 500 });
     }
 
-    let url = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${appId}&app_key=${appKey}&what=${encodeURIComponent(keywords)}&content-type=application/json&results_per_page=${maxResults}&where=remote`;
+    let url = `https://api.adzuna.com/v1/api/jobs/${countryCode}/search/1?app_id=${appId}&app_key=${appKey}&what=${encodeURIComponent(keywords)}&content-type=application/json&results_per_page=${maxResults}`;
     if (location && location !== 'United States') { // Solo añadir 'where' si es diferente del valor por defecto para 'us'
         url += `&where=${encodeURIComponent(location)}`;
     }
