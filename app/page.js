@@ -559,7 +559,7 @@ function HomePage() {
         <button
             key={platform.name}
             onClick={() => handleConnectPlatform(platform.name, platform.authUrl)}
-            className={`rounded-md shadow-md transition duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500  px-2 mb-2 flex flex-col items-center justify-center text-center
+            className={`rounded-md shadow-md transition duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500   mb-2 flex flex-col items-center justify-center text-center
                 ${connectedPlatforms[platform.name]
                     ? 'bg-green-500 text-white'
                     : 'bg-white text-blue-700 hover:bg-blue-50 active:bg-blue-100 active:shadow-sm'
