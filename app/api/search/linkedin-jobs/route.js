@@ -45,7 +45,7 @@ export async function POST(request) {
         }
 
         const accessToken = user.linkedinAccessToken;
-        const keywords = 'junior developer';
+        const keywords = '(Junior OR Jr)';
         const encodedLocation = encodeURIComponent(location || 'Argentina');
         const count = 100;
         let start = 0;

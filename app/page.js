@@ -520,11 +520,11 @@ function HomePage() {
                     <span className="font-semibold">Publicado hace:</span> {vacancy.daysAgo !== null ? `${vacancy.daysAgo} día${vacancy.daysAgo !== 1 ? 's' : ''}` : 'Fecha no disponible'}
                 </p>
             )}
-            {vacancy.published_at && vacancy.source === 'GetOnBoard' && (
+           {/*  {vacancy.published_at && vacancy.source === 'GetOnBoard' && (
                 <p className="text-gray-700 mb-2">
                     <span className="font-semibold">Publicado en:</span> {new Date(vacancy.published_at).toLocaleDateString()}
                 </p>
-            )}
+            )} */}
             {vacancy.published_at && vacancy.source === 'Adzuna Jobs' && (
                 <p className="text-gray-700 mb-2">
                     <span className="font-semibold">Publicado en:</span> {new Date(vacancy.published_at).toLocaleDateString()}
