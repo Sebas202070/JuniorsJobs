@@ -27,7 +27,7 @@ export default function RootLayout({ children }) {
       <head>
         {/* Google tag (gtag.js) */}
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=TU_ID_DE_MEDICION_GA4" // Reemplaza "TU_ID_DE_MEDICION_GA4" con tu ID de medición real
+          src="https://www.googletagmanager.com/gtag/js?id=G-C85TP6CQJ0" // Reemplaza "TU_ID_DE_MEDICION_GA4" con tu ID de medición real
           strategy="afterInteractive" // Carga el script después de que la página se vuelve interactiva
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -35,7 +35,7 @@ export default function RootLayout({ children }) {
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'TU_ID_DE_MEDICION_GA4'); // Reemplaza "TU_ID_DE_MEDICION_GA4" con tu ID de medición real
+            gtag('config', 'G-C85TP6CQJ0'); 
           `}
         </Script>
       </head>
